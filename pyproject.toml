@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "vuvu-practise"
+version = "0.0.1"
+description = "写着玩的"
+authors = ["qianxue <i@ieew.cc>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+PySide6 = "^6.4.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
