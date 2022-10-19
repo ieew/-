@@ -1,7 +1,6 @@
-from calendar import c
 from PySide6.QtWidgets import QMainWindow, QTextEdit
-from PySide6.QtGui import QKeyEvent, QResizeEvent, QInputMethodEvent, QKeyEvent, QShortcut, QKeySequence, QGuiApplication
-from PySide6.QtCore import QRect, QThread, Signal, QEvent
+from PySide6.QtGui import QKeyEvent, QResizeEvent, QInputMethodEvent, QKeyEvent, QShortcut, QKeySequence, QGuiApplication, QCloseEvent
+from PySide6.QtCore import QRect, QThread, Signal
 
 from .Thread import TaskWorker
 from .window import UiMainWindow
@@ -10,7 +9,7 @@ import time
 
 class MainWindow(QMainWindow):
     thread_range = Signal()
-    _switch = False
+
     __start_time = 0
     __hit_count = 0
 
@@ -18,14 +17,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.ui = UiMainWindow()
         self.ui.setup_ui(self)
+        self.c = 0
         self.setup_thread()
         self.ui.input_box.input_method_hook = self.input_hook
         self.ui.input_box.key_press_hook = self.key_press_hook
         self.ShortAlt_E = QShortcut(QKeySequence("Alt+E"), self)
         self.ShortAlt_E.activated.connect(self.Alt_E)
-        self.ui.input_box.decorate(QEvent.InputMethodQuery)(self.input_InputMethodQuery_event)
-        self.ui.input_box.decorate(QEvent.ReadOnlyChange)(self.input_ReadOnlyChange_event)
-        self.ui.input_box.decorate(QEvent.KeyPress, QEvent.InputMethod)(self._start_info)
+        self.ui.input_box.textChanged.connect(self.text_overloading)
+        self.ui.input_box.cursorPositionChanged.connect(self.cursor_overloading)
 
     def setup_thread(self):
         self.thread1 = QThread(self)
@@ -54,32 +53,39 @@ class MainWindow(QMainWindow):
         if self.ui.display_box.toPlainText() != self.ui.input_box.toPlainText():
             QTextEdit.inputMethodEvent(self.ui.input_box, arg__1)
 
-    def input_InputMethodQuery_event(self, _: QInputMethodEvent):
+    def text_overloading(self):
+        if not self.thread1.isRunning():
+            self.thread1.start()
+            self.thread_range.emit()
+            self.__start_time = time.time()
+            self.__hit_count = 0
+        else:
+            self.__hit_count += 1
+
         value = len(self.ui.input_box.toPlainText()) / len(self.ui.display_box.toPlainText()) * self.ui.progress_bar.maximum() - 1
         self.ui.progress_bar.setValue(value if value > 0 else 0)
         if self.ui.display_box.toPlainText() == self.ui.input_box.toPlainText():
             self.ui.input_box.setReadOnly(True)
+            self.input_ReadOnlyChange_event()
+        # cursor = self.ui.display_box.textCursor()
+        # cursor.movePosition(self.ui.input_box.textCursor().MoveOperation.Right, self.ui.input_box.textCursor().MoveMode.MoveAnchor, 1)
+        # cursor.insertText(f"{self.c}")
+        # self.c += 1
 
-    def input_ReadOnlyChange_event(self, _: QEvent):
+    def cursor_overloading(self):
+        cursor = self.ui.display_box.textCursor()
+        cursor.movePosition(self.ui.input_box.textCursor().MoveOperation.Right, self.ui.input_box.textCursor().MoveMode.MoveAnchor, 1)
+
+    def input_ReadOnlyChange_event(self):
         if self.thread1.isRunning():
-            self.thread1.exit(0)
-            self._switch = False
+            self.range_thread.signal = False
+            self.thread1.quit()
 
     def Alt_E(self):
         clipboard = QGuiApplication.clipboard()
         self.ui.display_box.setHtml(f"{self.ui.display_box.textstart}{clipboard.text()}{self.ui.display_box.textend}")
         self.ui.input_box.setReadOnly(False)
         self.ui.input_box.setText("")
-
-    def _start_info(self, _):
-        if not self._switch:
-            self.thread1.start()
-            self.thread_range.emit()
-            self._switch = True
-            self.__start_time = time.time()
-            self.__hit_count = 0
-        else:
-            self.__hit_count += 1
 
     def update_info(self):
         if self.ui.display_box.toPlainText() == self.ui.input_box.toPlainText():

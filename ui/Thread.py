@@ -1,12 +1,7 @@
-from typing import Optional
-from PySide6.QtCore import QObject, Signal, QMutex
-from time import sleep
-
-from .controls import TextBrowser, TextEdit
+from PySide6.QtCore import QObject, Signal, QMutex, QThread
 
 
 lock = QMutex()
-
 
 class TaskWorker(QObject):
     range_requested = Signal(int)
@@ -18,4 +13,4 @@ class TaskWorker(QObject):
         self.signal = True
         while self.signal:
             self.range_requested.emit(())
-            sleep(0.1)
+            QThread.msleep(80)

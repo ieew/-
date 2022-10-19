@@ -1,7 +1,7 @@
-from typing import Callable, Dict, List
+from typing import Callable, List
 from PySide6.QtWidgets import QTextBrowser, QTextEdit
-from PySide6.QtCore import QRect, Qt, QEvent
-from PySide6.QtGui import QFont, QKeyEvent, QInputMethodEvent, QEnterEvent, QMouseEvent, QFocusEvent, QMoveEvent, QResizeEvent
+from PySide6.QtCore import QRect, Qt, Signal
+from PySide6.QtGui import QFont, QKeyEvent, QInputMethodEvent
 
 
 class TextBrowser(QTextBrowser):
@@ -12,7 +12,7 @@ class TextBrowser(QTextBrowser):
 <html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n
 p, li { white-space: pre-wrap; }\n
 hr { height: 1px; border-width: 0; }\n
-</style></head><body style=\" font-family:'Microsoft YaHei UI'; font-size:20pt; font-weight:400; font-style:normal;\">\n
+</style></head><body style=\"font-size:20pt; font-weight:400; font-style:normal;\">\n
 <p style=\" margin-top:13px; margin-bottom:13px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">"""
         self.textend = u"</p></body></html>"
 
@@ -21,7 +21,8 @@ hr { height: 1px; border-width: 0; }\n
 
 class TextEdit(QTextEdit):
     input_method_hook: List[Callable]
-    events: Dict[QEvent, List[Callable]] = {}
+    textChanged = Signal()
+    cursorPositionChanged = Signal()
 
     def set_ui(self):
         self.setObjectName(u"Input_box")
@@ -41,17 +42,3 @@ class TextEdit(QTextEdit):
     def inputMethodEvent(self, arg__1: QInputMethodEvent) -> None:
         if self.input_method_hook:
             self.input_method_hook(arg__1)
-
-    def event(self, e: QEvent) -> bool:
-        if e.type() in self.events:
-            for i in self.events[e.type()]:
-                i(e)
-        return super().event(e)
-
-    def decorate(self, *type: QEvent.Type):
-        def _(fun: Callable):
-            for i in type:
-                if i not in self.events:
-                    self.events[i] = []
-                self.events[i].append(fun)
-        return _
